@@ -51,8 +51,6 @@ The second notebook contains the expanded feature approach. The reported 37th-pl
 
 The notebooks use the original competition data and model files. Those external files and paths need to be set up before the notebooks can be run.
 
-For the full Version 11 solution, see the [original Kaggle notebook](https://www.kaggle.com/code/thegrey/ad24-eleventh?scriptVersionId=204479373).
-
 ## Team
 
 This was a team effort. Thanks to the competition organizers, our teammates, and all the other competitors who made the challenge worthwhile.

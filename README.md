@@ -1,150 +1,70 @@
-# ARIEL Exoplanet ML
+# NeurIPS – Ariel Data Challenge 2024
 
-A collection of our work for the **NeurIPS – Ariel Data Challenge 2024**, focused on predicting exoplanet transit depths from the challenge data.
+Our team finished **37th out of 1,151 teams** and received a **Kaggle Competition Silver Medal**.
 
-## Result
+The challenge asked us to use data from the ESA Ariel mission to predict how much a star's light dims when a planet passes in front of it. This small drop in brightness is called a *transit depth*. Getting a good estimate means finding the planet's signal in measurements that also contain noise and other variations.
 
-**Competition Silver Medalist — 37th out of 1,151 teams**
+![Kaggle Silver Medal — 37th place](kaggle-silver-medal.png.png)
 
-Awarded by Kaggle on **November 1, 2024**.
+## Our result
 
-![Kaggle Silver Medal — NeurIPS Ariel Data Challenge 2024](kaggle-silver-medal.png.png)
+We tested several versions of our solution. These were our two strongest reported versions:
 
-First of all, I would like to thank the hosts for the preparations, my teammates @imayushsaxena and @octaviograu and all the competitors who made it that challenging!
+| Version | Public score | Private score | Public leaderboard place | Final place |
+|---|---:|---:|---:|---:|
+| 10 | 0.6152848 | 0.6198108 | 53 | — |
+| 11 | 0.6128403 | **0.6293136** | — | **37** |
 
-Our top solutions
-The solution got
+The final ranking was based on the private leaderboard. Version 11 is the solution that finished in 37th place.
 
-variant	public	private	LB place	Final place
-10th	0.6152848	0.6198108	53	-
-11th	0.6128403	0.6293136	-	37
-Summary of 11th
-We used only AIRS data for the solution
+## What we built
 
-The basic flow of the solution:
+We built a data-processing and prediction pipeline using **AIRS data**. In simple terms, we cleaned and prepared the measurements, identified the part of the signal where a planet crosses its star, measured useful patterns in that signal, and used many models together to estimate the transit depth.
 
-Standard correction, but without binning / shrinking the flux
-Normalize the signal
-Denoise the signal with gaussian_filter1d
-Detect transit phases, including limb darkening
-Calculate features for the whole signal
-Calculate features for binned wavelengths by grouping nearest 6, 10, and 25 wavelengths.
-On top of the features 1000 models were trained
-The mean of the model's predictions gives the transit depth prediction
-Sigma is based on the std for the model's predictions per wavelength
-Link to the 11th solution.
+Our Version 11 approach followed these steps:
 
-Backbone pipeline
-We tried many denoising strategies, so we needed a simple way to iterate. We built a functional pipeline that's easy to configure:
+1. Correct and normalize the signal.
+2. Smooth noisy measurements using a Gaussian filter.
+3. Find the start and end of the transit, taking limb darkening into account.
+4. Extract features from the full signal.
+5. Extract more features by grouping nearby wavelengths in groups of **6, 10, and 25**.
+6. Train an ensemble of **1,000 models**: 500 Ridge regression models and 500 PLSRegression models.
+7. Combine the predictions. For each wavelength, we removed the lowest and highest 30% of predictions and averaged the rest.
+8. Estimate uncertainty from the spread of the model predictions, using a scale factor of 4.
 
-from functools import reduce
+We also built the pipeline as smaller configurable steps. This made it easier to try different filtering, detrending, and feature-extraction settings without rebuilding the whole process each time.
 
-full_pipeline = [
-    lambda  **kwargs: bin_wavelengths(**kwargs),
-    lambda  **kwargs: normalize_signal(**kwargs),
-    lambda **kwargs: filter_signal_with_gaussian(sigma=25, **kwargs),
-    lambda **kwargs: polynomial_detrend(**kwargs),
-    lambda **kwargs: fit_transit_poly(**kwargs),
-    lambda **kwargs: collect_features(**kwargs),
-]
+## What we learned
 
-initial_kwargs = {'signal': None, 'margin': 1, 'from_wavelength':39, 'to_wavelength':321}
-result = reduce(lambda kw, func: func(**kw), full_pipeline, initial_kwargs)
-Then we can combine result['features'] for different pipelines.
+We tried other approaches too, including wavelet filtering, median filtering, Savitzky–Golay filtering, Gaussian processes, tree-based models, and a neural network. They did not improve the final submission enough to replace our chosen approach within the time available.
 
-Each step in the pipeline can be organized like this:
+With more time, we would have liked to test FGS data, create additional training examples with the BATMAN transit model, improve feature selection, and explore uncertainty estimation further.
 
-def filter_signal_with_median(window=5, **kwargs):
-    signal = kwargs['signal']
-    filtered_signal = median_filter(signal, size=window)
-    kwargs['signal'] = filtered_signal
-    return kwargs
-Transit phase detection
-After experimenting with the BATMAN library, we found that there are several possible structures of the transit flux signal, even when fully denoised and detrended. Limb darkening can influence the calculation of transit depth, affecting how we calculate the transit edges
+## Notebooks
 
- def get_transit_phases2(**kwargs):
-    signal = kwargs['signal'] + 1
+The two notebooks shared here show selected versions of our work:
 
-    grad1 = np.gradient(signal)
-    mn = np.argmin(grad1)
-    mx = np.argmax(grad1)
+- [01 — Transit-depth ensemble baseline](01-ariel-transit-depth-ensemble-baseline.ipynb)
+- [02 — Multiscale spectral-feature ensemble](02-ariel-multiscale-spectral-feature-ensemble.ipynb)
 
-    peaks = find_peaks(grad1, width=25)[0]
-    ingress_left = peaks[(peaks < mn) & (mn - peaks <= 250)][-1] if np.any((peaks < mn) & (mn - peaks <= 250)) else mn-110
-    ingress_right = peaks[(peaks > mn) & (peaks - mn <= 250)][0] if np.any((peaks > mn) & (peaks - mn <= 250)) else mn+110
+The second notebook contains the expanded feature approach. The reported 37th-place result is from Version 11, as described in the original solution write-up.
 
-    dips = find_peaks(-grad1, width=25)[0]
-    egress_left = dips[(dips < mx) & (mx - dips <= 250)][-1] if np.any((dips < mx) & (mx - dips <= 250)) else mx-110
-    egress_right = dips[(dips > mx) & (dips - mx <= 250)][0] if np.any((dips > mx) & (dips - mx <= 250)) else mx+110
+The notebooks use the original competition data and model files. Those external files and paths need to be set up before the notebooks can be run.
 
-    kwargs['ingress_left'] = ingress_left
-    kwargs['ingress_right'] = ingress_right
-    kwargs['egress_left'] = egress_left
-    kwargs['egress_right'] = egress_right
+For the full Version 11 solution, see the [original Kaggle notebook](https://www.kaggle.com/code/thegrey/ad24-eleventh?scriptVersionId=204479373).
 
-    return kwargs
-Features calculations
-Knowing the ingress and egress of the transit, we fit a polynomial into the flux signal (ignoring the transit) and then perform detrending.
+## Team
 
-Then we can assume that once the plain detrended signal is on the level of constant 1, then we can derive a transit depth by the formula:
+This was a team effort. Thanks to the competition organizers, our teammates, and all the other competitors who made the challenge worthwhile.
 
-def transit_formula(s):
-    return 1/s - 1
-Here s can be a mean flux in the transit, flux at the middle point, etc. We collect quite a few here. This was a huge speed improvement compared to the minimize method.
+- [Shamil Yagiyayev](https://github.com/shamily)
+- [Octavi Grau](https://github.com/octavigrau)
+- [Ayush Saxena](https://github.com/ayuchsaxena)
 
-Additionally, we collect generic features on the in-transit flux, like the standard deviation.
+## Original competition write-up
 
-Models training
-We have generated 500 Ridge models and 500 PLSRegression models that formed the ensemble.
+[Wavelength Masters — 37th Place Solution](https://www.kaggle.com/competitions/ariel-data-challenge-2024/writeups/wavelength-masters-37th-place-solution)
 
-Alpha for Ridge was random:
+**Citation**
 
-alpha = 10 ** (2 - 3 * np.random.rand())
-The same as n_components for PLSRegression:
-
-model = PLSRegression(n_components=n_components, tol=1e-8)
-We used different subsets of the training data for each model:
-
-subset_size = int(X_train.shape[0] * np.random.uniform(0.5, 1))
-We sorted the model predictions for each wavelength, removed the lowest and highest 30%, and took the mean of the remaining predictions.
-
-Sigma calculation
-We calculated the standard deviation of the sorted predictions for each wavelength:
-
-std_preds = np.std(sorted_preds, axis=0)
-We then multiplied the standard deviation by a coefficient that worked best in LB:
-
-COEFF_0 = 4 # This one worked the best
-sigma_response = sigma * COEFF_0
-What worked well, though didn't make it to the final submission
-Usage of wavelets (pywt) - our favorite one was db29
-median_filter
-savgol_filter
-What didn't work
-Gaussian Process Regression - we tried different kernels here, but didn't see breakthroughs while a big increase of the processing time
-LinearRegresion, SVM, LGBM, CatBoost, RandomForest, XGBoost…
-BayesianRidge - worked well, though long time (and didn't fit into the memory for more features)
-We tried to train a neural network with a loss function for both sigma and transit depth (the competition score), but didn't have much luck due to the limited time
-Improvements We Lacked Time For
-Generate the train data with BATMAN
-Use FGS data
-Use data for real molecules to generate additional training data
-Collect more meaningful features (and filter out those which don't help)
-Sigma approaches - we didn't use all the potential here
-Please feel free to explore our best solution.
-
-Authors
-Shamil Yagiyayev
-shamily
-Octavi Grau
-octaviograu
-Ayush Saxena
-ayuchsaxena 
-
-Share
-Citation
-Shamil Yagiyayev, Octavi Grau, Ayush Saxena. 37th place solution. https://www.kaggle.com/competitions/ariel-data-challenge-2024/writeups/wavelength-masters-37th-place-solution. 2024. Kaggle
-
-
-Our team placed **37th among 1,151 teams**, earning a **Competition Silver Medal** in the NeurIPS – Ariel Data Challenge 2024.
-
+Shamil Yagiyayev, Octavi Grau, and Ayush Saxena. *37th Place Solution — NeurIPS Ariel Data Challenge 2024*. Kaggle, 2024.

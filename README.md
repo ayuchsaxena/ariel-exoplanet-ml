@@ -61,10 +61,6 @@ This was a team effort. Thanks to the competition organizers, our teammates, and
 - [Octavi Grau](https://github.com/octavigrau)
 - [Ayush Saxena](https://github.com/ayuchsaxena)
 
-## Original competition write-up
-
-[Wavelength Masters — 37th Place Solution](https://www.kaggle.com/competitions/ariel-data-challenge-2024/writeups/wavelength-masters-37th-place-solution)
-
 **Citation**
 
 Shamil Yagiyayev, Octavi Grau, and Ayush Saxena. *37th Place Solution — NeurIPS Ariel Data Challenge 2024*. Kaggle, 2024.

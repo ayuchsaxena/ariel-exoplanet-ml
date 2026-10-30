@@ -8,7 +8,7 @@ A collection of our work for the **NeurIPS – Ariel Data Challenge 2024**, focu
 
 Awarded by Kaggle on **November 1, 2024**.
 
-![Kaggle Silver Medal — NeurIPS Ariel Data Challenge 2024](assets/kaggle-silver-medal.png)
+![Kaggle Silver Medal — NeurIPS Ariel Data Challenge 2024](kaggle-silver-medal.png.png)
 
 ## What we worked on
 
@@ -31,11 +31,9 @@ The notebooks are provided for review and reference. They rely on the original c
 ```text
 ariel-exoplanet-ml/
 ├── README.md
-├── assets/
-│   └── kaggle-silver-medal.png
-└── notebooks/
-    ├── 01-ariel-transit-depth-ensemble-baseline.ipynb
-    └── 02-ariel-multiscale-spectral-feature-ensemble.ipynb
+├── kaggle-silver-medal.png.png
+├── 01-ariel-transit-depth-ensemble-baseline.ipynb
+└── 02-ariel-multiscale-spectral-feature-ensemble.ipynb
 ```
 
 ## About the result

@@ -40,6 +40,18 @@ We tried other approaches too, including wavelet filtering, median filtering, Sa
 
 With more time, we would have liked to test FGS data, create additional training examples with the BATMAN transit model, improve feature selection, and explore uncertainty estimation further.
 
+## My contribution
+
+### Transit detection
+- Wrote the logic to identify where the planet starts and stops crossing the star.
+- Accounted for limb darkening so the transit dip shape was handled properly.
+- Tuned the detection settings.
+
+### Feature engineering
+- Extracted features from the full signal.
+- Built multiscale features by grouping nearby wavelengths in sets of 6, 10, and 25. Notebook 02 focuses mainly on this work.
+- Experimented with feature selection.
+
 ## Notebooks
 
 The two notebooks shared here show selected versions of our work:
